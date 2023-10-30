@@ -1,0 +1,146 @@
+{
+  "name": "mongodb_lock_escalation_conflicts",
+  "description": "This incident type refers to situations where MongoDB database experiences lock escalation conflicts. MongoDB uses locks to control concurrent access to the database. When the number of locks held by a process reaches a certain threshold, the process may escalate its locks to a higher level, which can cause conflicts with other processes. These conflicts can result in performance degradation and even system crashes. Resolving this incident requires identifying the root cause of the lock escalation conflicts and implementing appropriate measures such as optimizing database queries, increasing the available system resources, or adjusting the MongoDB lock settings.",
+  "params": [
+    {
+      "name": "MONGODB_PORT",
+      "value": ""
+    },
+    {
+      "name": "MAX_CONNECTIONS",
+      "value": ""
+    },
+    {
+      "name": "MONGODB_USER",
+      "value": ""
+    },
+    {
+      "name": "MONGODB_PASSWORD",
+      "value": ""
+    },
+    {
+      "name": "MONGODB_HOST",
+      "value": ""
+    },
+    {
+      "name": "BATCH_SIZE",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## MongoDB lock escalation conflicts.\nThis incident type refers to situations where MongoDB database experiences lock escalation conflicts. MongoDB uses locks to control concurrent access to the database. When the number of locks held by a process reaches a certain threshold, the process may escalate its locks to a higher level, which can cause conflicts with other processes. These conflicts can result in performance degradation and even system crashes. Resolving this incident requires identifying the root cause of the lock escalation conflicts and implementing appropriate measures such as optimizing database queries, increasing the available system resources, or adjusting the MongoDB lock settings."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if MongoDB is running"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `systemctl status mongod`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if MongoDB is stuck or unresponsive"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `mongo --eval \"db.stats()\"`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if there are any lock escalations"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `mongo --eval \"db.currentOp({'active': true, 'waitingForLock': true})\"`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if there are any active transactions"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `mongo --eval \"db.currentOp({'active': true, 'waitingForLock': false, 'txnNumber': {\\$gt: 0}})\"`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if there are any blocked transactions"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `mongo --eval \"db.currentOp({'active': true, 'waitingForLock': true, 'txnNumber': {\\$gt: 0}})\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the MongoDB log for any errors or warnings"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `tail -n 50 /var/log/mongodb/mongod.log`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Increase the number of available connections to the MongoDB server and optimize the queries to reduce contention and reduce the likelihood of lock escalation conflicts."
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_mongodb_connection_optimization($MONGODB_PORT, $MAX_CONNECTIONS, $MONGODB_USER, $MONGODB_PASSWORD, $MONGODB_HOST, $BATCH_SIZE)"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Configure MongoDB to use lock escalation sparingly or disable it altogether if it is causing too many conflicts."
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_disable_mongodb_lock_escalation()"
+    }
+  ]
+}
